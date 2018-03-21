@@ -92,6 +92,27 @@ public class Kitura {
         return server
     }
 
+    /// Add a FastCGIServer on a unix sockaet with a delegate.
+    ///
+    /// The server is only registered with the framework, it does not start listening
+    /// on the port until `Kitura.run()` or `Kitura.start()` are called.
+    ///
+    ///### Usage Example: ###
+    ///```swift
+    /// Kitura.addFastCGIServer(onPath: path, with: router)
+    ///```
+    /// - Parameter onPath: The unix socket to listen on.
+    /// - Parameter with: The `ServerDelegate` to use.
+    /// - Returns: The created `FastCGIServer`.
+    @discardableResult
+    public class func addFastCGIServer(onPath path: String,
+                                       with delegate: ServerDelegate) -> FastCGIServer {
+        let server = FastCGI.createServer()
+        server.delegate = delegate
+        fastCGIServersAndPaths.append((server: server, path: path))
+        return server
+    }
+
     /// Start the Kitura framework.
     ///
     ///### Usage Example: ###
@@ -130,6 +151,14 @@ public class Kitura {
                 Log.error("Error listening on port \(port): \(error). Use server.failed(callback:) to handle")
             }
         }
+        for (server, path) in fastCGIServersAndPaths {
+            Log.verbose("Starting a FastCGI Server on unix socket \(path)...")
+            do {
+                try server.listen(on: path)
+            } catch {
+                Log.error("Error listening on unix socket \(path): \(error). Use server.failed(callback:) to handle")
+            }
+        }
     }
 
     /// Stop all registered servers.
@@ -159,6 +188,8 @@ public class Kitura {
     }
 
     typealias Port = Int
+    typealias SocketPath = String
     internal private(set) static var httpServersAndPorts = [(server: HTTPServer, port: Port)]()
     internal private(set) static var fastCGIServersAndPorts = [(server: FastCGIServer, port: Port)]()
+    internal private(set) static var fastCGIServersAndPaths = [(server: FastCGIServer, path: SocketPath)]()
 }
