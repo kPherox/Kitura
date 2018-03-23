@@ -181,6 +181,11 @@ public class Kitura {
             server.stop()
         }
 
+        for (server, path) in fastCGIServersAndPaths {
+            Log.verbose("Stopping FastCGI Server on unix socket \(path)...")
+            server.stop()
+        }
+
         if unregister {
             httpServersAndPorts.removeAll()
             fastCGIServersAndPorts.removeAll()
